@@ -17,6 +17,34 @@ void GPIO_PORTF_INIT(void)
     GPIO_PORTF_IM_R  |= (1 << 4);  // enable interrupt on PF4
 }
 
+void delay(float time, int clock)
+{
+    float value;
+    value = (time * clock) / 1000;
+    NVIC_ST_RELOAD_R = value;      // set reload value
+    NVIC_ST_CURRENT_R = 0x0;     // reset current value
+    NVIC_ST_CTRL_R = 0x05;       // enable timer, use system clock
+    while ((NVIC_ST_CTRL_R & (1 << 16)) == 0)
+    {
+        // wait for the count flag
+    }
+    NVIC_ST_CTRL_R = 0x0;        // disable timer
+}
+
+int clock = 16000000;  // system clock frequency
+
+void GPIO_PORTF_Handler(void)
+{
+    int state0 = GPIO_PORTF_DATA_R;
+    delay(25, clock);              // debounce delay
+    int state1 = GPIO_PORTF_DATA_R;
+    if (state0 != state1)
+    {
+        GPIO_PORTF_DATA_R ^= 0x02; // toggle red LED (PF1)
+    }
+
+    GPIO_PORTF_ICR_R |= (1 << 4);  // clear interrupt flag for PF4
+}
 
 
 int main(void)
